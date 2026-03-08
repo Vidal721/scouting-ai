@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scout Intel Pro | Performance Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        .chat-bubble-ai { border-radius: 12px; }
+        #chat-container::-webkit-scrollbar { width: 4px; }
+        #chat-container::-webkit-scrollbar-thumb { background: #334155; }
+        
+        /* Table Design */
+        table { width: 100%; border-collapse: collapse; margin: 12px 0; background: #0f172a; border-radius: 8px; overflow: hidden; }
+        th { background: #3b82f6; color: white; padding: 8px; text-align: left; font-size: 0.75rem; text-transform: uppercase; }
+        td { padding: 8px; border-bottom: 1px solid #1e293b; font-size: 0.85rem; color: #cbd5e1; }
+        tr:nth-child(even) { background: #1e293b; }
+
+        .output-content p { margin-bottom: 0.75rem; }
+
+        /* Animation for logo when thinking */
+        @keyframes pulse-blue {
+            0%, 100% { color: #3b82f6; text-shadow: 0 0 0px rgba(59, 130, 246, 0); }
+            50% { color: #60a5fa; text-shadow: 0 0 15px rgba(59, 130, 246, 0.5); }
+        }
+        .thinking-logo { animation: pulse-blue 1.2s infinite; }
+    </style>
+</head>
+<body class="bg-slate-900 text-white h-screen flex flex-col font-sans overflow-hidden">
+
+    <div id="loading-screen" class="fixed inset-0 bg-slate-900 z-50 flex flex-col items-center justify-center p-6 text-center">
+        <div class="w-12 h-12 mb-4 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        <h2 class="text-lg font-bold mb-2">Syncing Scouting Brain</h2>
+        <div class="w-full max-w-xs bg-slate-800 rounded-full h-1.5 mb-2">
+            <div id="progress-bar" class="bg-blue-500 h-1.5 rounded-full" style="width: 0%"></div>
+        </div>
+        <p id="progress-percent" class="text-[10px] font-mono text-slate-500">0%</p>
+    </div>
+
+    <header class="bg-slate-800 p-4 border-b border-slate-700 flex justify-between items-center shadow-lg">
+        <h1 id="logo" class="text-lg font-black text-blue-500 tracking-tighter italic transition-all duration-300">
+            SCOUT<span class="text-white">INTEL</span>
+        </h1>
+        <span id="ai-status-pill" class="text-[8px] font-bold px-2 py-1 rounded-full border border-slate-600 uppercase">Offline</span>
+    </header>
+
+    <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-4">
+        <div class="text-center text-slate-600 text-[9px] uppercase tracking-widest py-2">Optimized Mobile Interface</div>
+    </div>
+
+    <div id="chart-wrapper" class="hidden mx-4 mb-4 p-3 bg-slate-800 rounded-lg border border-slate-700 shadow-xl">
+        <canvas id="scoutChart" height="140"></canvas>
+    </div>
+
+    <div class="p-4 bg-slate-900 border-t border-slate-800">
+        <div class="flex gap-2 max-w-5xl mx-auto">
+            <input type="text" id="userInput" 
+                class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm text-slate-200" 
+                placeholder="Ask for a table, top 5, or graph...">
+            <button onclick="askAI()" id="runBtn" class="bg-blue-600 text-white font-bold px-5 rounded-lg active:scale-95 transition-all text-sm">
+                RUN
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        import * as webllm from "https://esm.run/@mlc-ai/web-llm";
+
+        const modelId = "Llama-3.2-1B-Instruct-q4f16_1-MLC";
+        let engine;
+        let myChart = null;
+        const logo = document.getElementById("logo");
+
+        async function init() {
+            engine = await webllm.CreateMLCEngine(modelId, {
+                initProgressCallback: (report) => {
+                    const p = Math.round(report.progress * 100);
+                    document.getElementById("progress-bar").style.width = p + "%";
+                    document.getElementById("progress-percent").innerText = p + "%";
+                    if (p === 100) {
+                        setTimeout(() => {
+                            document.getElementById("loading-screen").classList.add("hidden");
+                            document.getElementById("ai-status-pill").className = "text-[8px] font-bold px-2 py-1 rounded-full border border-green-500 text-green-500 uppercase";
+                            document.getElementById("ai-status-pill").innerText = "Ready";
+                        }, 500);
+                    }
+                }
+            });
+        }
+
+        window.askAI = async () => {
+            const text = document.getElementById("userInput").value.trim();
+            if (!text) return;
+
+            logo.classList.add("thinking-logo");
+            document.getElementById("chat-container").innerHTML += `<div class="self-end ml-auto bg-blue-700 p-3 rounded-xl rounded-tr-none max-w-[85%] text-xs font-semibold shadow-md">${text}</div>`;
+            document.getElementById("userInput").value = "";
+
+            const bubbleWrapper = document.createElement("div");
+            bubbleWrapper.className = "flex flex-col items-start space-y-1";
+            const aiBubble = document.createElement("div");
+            aiBubble.className = "self-start bg-slate-800 p-3 chat-bubble-ai max-w-[95%] border border-slate-700 text-slate-200 text-sm output-content";
+            aiBubble.innerText = "...";
+            const statusTag = document.createElement("div");
+            statusTag.className = "text-[9px] text-blue-400 font-bold uppercase tracking-tighter ml-1";
+            statusTag.innerText = "Sifting Database...";
+
+            bubbleWrapper.appendChild(aiBubble);
+            bubbleWrapper.appendChild(statusTag);
+            document.getElementById("chat-container").appendChild(bubbleWrapper);
+            document.getElementById("chat-container").scrollTop = document.getElementById("chat-container").scrollHeight;
+
+            try {
+                const dataRes = await fetch('data.json');
+                const scoutingData = await dataRes.json();
+                const lowerText = text.toLowerCase();
+                let contextData = [];
+
+                // 1. SMART FILTERING FOR SPEED
+                if (lowerText.match(/top|best|highest|leaders/)) {
+                    statusTag.innerText = "Sorting Rankings...";
+                    contextData = [...scoutingData].sort((a, b) => (b.points || 0) - (a.points || 0)).slice(0, 10);
+                } else if (lowerText.match(/bottom|worst|lowest/)) {
+                    statusTag.innerText = "Finding Weaknesses...";
+                    contextData = [...scoutingData].sort((a, b) => (a.points || 0) - (b.points || 0)).slice(0, 10);
+                } else {
+                    statusTag.innerText = "Indexing Names...";
+                    contextData = scoutingData.filter(p => {
+                        const parts = p.name.toLowerCase().split(' ');
+                        return parts.some(part => lowerText.includes(part)) || lowerText.includes(p.pos.toLowerCase());
+                    });
+                }
+
+                // Capping data to protect mobile VRAM
+                if (contextData.length > 10) contextData = contextData.slice(0, 10);
+                if (contextData.length === 0) contextData = scoutingData.slice(0, 3);
+
+                statusTag.innerText = "AI Analyzing...";
+
+                const reply = await engine.chat.completions.create({
+                    messages: [
+                        { role: "system", content: "You are a brief scout. Use Markdown Tables. No asterisks (*). No fluff." },
+                        { role: "user", content: `DATA: ${JSON.stringify(contextData)}\n\nUSER: ${text}` }
+                    ],
+                    temperature: 0.0
+                });
+
+                let cleanContent = reply.choices[0].message.content.replace(/\*/g, "").replace(/\| \|/g, "\|");
+                aiBubble.innerHTML = marked.parse(cleanContent);
+
+                if (lowerText.match(/graph|chart|visual/)) {
+                    statusTag.innerText = "Rendering Visuals...";
+                    renderGraph(scoutingData, text);
+                }
+
+                statusTag.innerText = "Complete";
+                setTimeout(() => statusTag.style.opacity = "0", 3000);
+
+            } catch (err) {
+                aiBubble.innerText = "Analysis error. Try a specific name.";
+                statusTag.innerText = "Error";
+            }
+            
+            logo.classList.remove("thinking-logo");
+            document.getElementById("chat-container").scrollTop = document.getElementById("chat-container").scrollHeight;
+        };
+
+        function renderGraph(data, query) {
+            const wrapper = document.getElementById("chart-wrapper");
+            wrapper.classList.remove("hidden");
+            const ctx = document.getElementById('scoutChart').getContext('2d');
+            if (myChart) myChart.destroy();
+
+            let label = "Points"; let key = "points";
+            if (query.includes("rebounds")) { label = "Rebounds"; key = "rebounds"; }
+            if (query.includes("assists")) { label = "Assists"; key = "assists"; }
+
+            const top8 = [...data].sort((a, b) => b[key] - a[key]).slice(0, 8);
+
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: top8.map(p => p.name.split(' ')[0]), // First name for mobile space
+                    datasets: [{
+                        label: label,
+                        data: top8.map(p => p[key]),
+                        backgroundColor: '#3b82f6',
+                        borderRadius: 4
+                    }]
+                },
+                options: { 
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { 
+                        y: { beginAtZero: true, grid: { color: '#334155' } },
+                        x: { grid: { display: false }, ticks: { font: { size: 9 } } }
+                    } 
+                }
+            });
+        }
+
+        document.getElementById("userInput").addEventListener("keypress", e => { if (e.key === "Enter") window.askAI(); });
+        init();
+    </script>
+</body>
+</html>
