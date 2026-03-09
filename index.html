@@ -2,65 +2,83 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scout Intel Pro | Performance Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Scout Intel Pro</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ScoutIntel">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5358/5358640.png">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
     <style>
-        .chat-bubble-ai { border-radius: 12px; }
-        #chat-container::-webkit-scrollbar { width: 4px; }
-        #chat-container::-webkit-scrollbar-thumb { background: #334155; }
+        body { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: contain; }
+        .chat-bubble-ai { border-radius: 18px 18px 18px 4px; }
+        .chat-bubble-user { border-radius: 18px 18px 4px 18px; }
         
-        /* Table Design */
-        table { width: 100%; border-collapse: collapse; margin: 12px 0; background: #0f172a; border-radius: 8px; overflow: hidden; }
-        th { background: #3b82f6; color: white; padding: 8px; text-align: left; font-size: 0.75rem; text-transform: uppercase; }
-        td { padding: 8px; border-bottom: 1px solid #1e293b; font-size: 0.85rem; color: #cbd5e1; }
-        tr:nth-child(even) { background: #1e293b; }
-
-        .output-content p { margin-bottom: 0.75rem; }
-
-        /* Animation for logo when thinking */
-        @keyframes pulse-blue {
-            0%, 100% { color: #3b82f6; text-shadow: 0 0 0px rgba(59, 130, 246, 0); }
-            50% { color: #60a5fa; text-shadow: 0 0 15px rgba(59, 130, 246, 0.5); }
+        /* Glassmorphism UI */
+        .glass-header { background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(12px); }
+        
+        /* Table Style - Compact for Mobile */
+        table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 0.75rem; background: #0f172a; border-radius: 10px; overflow: hidden; }
+        th { background: #2563eb; color: white; padding: 6px; text-align: left; text-transform: uppercase; }
+        td { padding: 6px; border-bottom: 1px solid #1e293b; color: #e2e8f0; }
+        
+        @keyframes pulse-logo {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.7; }
         }
-        .thinking-logo { animation: pulse-blue 1.2s infinite; }
+        .thinking-logo { animation: pulse-logo 1s infinite ease-in-out; color: #60a5fa; }
+        
+        #chat-container::-webkit-scrollbar { display: none; }
     </style>
 </head>
-<body class="bg-slate-900 text-white h-screen flex flex-col font-sans overflow-hidden">
+<body class="bg-slate-950 text-slate-100 h-screen flex flex-col font-sans select-none">
 
-    <div id="loading-screen" class="fixed inset-0 bg-slate-900 z-50 flex flex-col items-center justify-center p-6 text-center">
-        <div class="w-12 h-12 mb-4 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-        <h2 class="text-lg font-bold mb-2">Syncing Scouting Brain</h2>
-        <div class="w-full max-w-xs bg-slate-800 rounded-full h-1.5 mb-2">
-            <div id="progress-bar" class="bg-blue-500 h-1.5 rounded-full" style="width: 0%"></div>
+    <div id="loading-screen" class="fixed inset-0 bg-slate-950 z-50 flex flex-col items-center justify-center p-8 text-center">
+        <div class="relative w-20 h-20 mb-6">
+            <div class="absolute inset-0 border-4 border-blue-500/20 rounded-full"></div>
+            <div id="loading-spinner" class="absolute inset-0 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
-        <p id="progress-percent" class="text-[10px] font-mono text-slate-500">0%</p>
+        <h2 class="text-xl font-black italic tracking-tighter text-white mb-2">SCOUT<span class="text-blue-500">INTEL</span></h2>
+        <p id="load-status" class="text-xs text-slate-500 font-mono tracking-widest uppercase mb-4">Initial Setup...</p>
+        <div class="w-full max-w-xs bg-slate-900 rounded-full h-1 overflow-hidden">
+            <div id="progress-bar" class="bg-blue-500 h-full transition-all duration-300" style="width: 0%"></div>
+        </div>
     </div>
 
-    <header class="bg-slate-800 p-4 border-b border-slate-700 flex justify-between items-center shadow-lg">
-        <h1 id="logo" class="text-lg font-black text-blue-500 tracking-tighter italic transition-all duration-300">
-            SCOUT<span class="text-white">INTEL</span>
-        </h1>
-        <span id="ai-status-pill" class="text-[8px] font-bold px-2 py-1 rounded-full border border-slate-600 uppercase">Offline</span>
+    <header class="glass-header sticky top-0 z-40 p-4 pt-12 border-b border-slate-800 flex justify-between items-center">
+        <div>
+            <h1 id="logo" class="text-xl font-black italic tracking-tighter text-white transition-all">SCOUT<span class="text-blue-500">INTEL</span></h1>
+            <p class="text-[9px] text-slate-500 uppercase font-bold tracking-widest">2026 Season Dashboard</p>
+        </div>
+        <div id="status-dot" class="w-2 h-2 rounded-full bg-slate-700 shadow-[0_0_8px_rgba(51,65,85,0.8)]"></div>
     </header>
 
-    <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-4">
-        <div class="text-center text-slate-600 text-[9px] uppercase tracking-widest py-2">Optimized Mobile Interface</div>
+    <main id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-4 pb-20">
+        <div class="bg-slate-900/50 border border-slate-800 p-4 rounded-2xl text-center">
+            <p class="text-xs text-slate-400">System Ready. Ask about specific players or team rankings.</p>
+        </div>
+    </main>
+
+    <div id="chart-wrapper" class="hidden fixed bottom-24 left-4 right-4 bg-slate-900/95 border border-slate-700 p-4 rounded-2xl shadow-2xl backdrop-blur-lg">
+        <div class="flex justify-between items-center mb-2">
+            <span class="text-[10px] font-bold text-blue-400 uppercase">Visual Breakdown</span>
+            <button onclick="this.parentElement.parentElement.classList.add('hidden')" class="text-slate-500">✕</button>
+        </div>
+        <canvas id="scoutChart" height="150"></canvas>
     </div>
 
-    <div id="chart-wrapper" class="hidden mx-4 mb-4 p-3 bg-slate-800 rounded-lg border border-slate-700 shadow-xl">
-        <canvas id="scoutChart" height="140"></canvas>
-    </div>
-
-    <div class="p-4 bg-slate-900 border-t border-slate-800">
-        <div class="flex gap-2 max-w-5xl mx-auto">
+    <div class="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-950 via-slate-950 to-transparent">
+        <div class="max-w-xl mx-auto flex gap-2 bg-slate-900 border border-slate-800 p-1.5 rounded-2xl shadow-2xl">
             <input type="text" id="userInput" 
-                class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm text-slate-200" 
-                placeholder="Ask for a table, top 5, or graph...">
-            <button onclick="askAI()" id="runBtn" class="bg-blue-600 text-white font-bold px-5 rounded-lg active:scale-95 transition-all text-sm">
-                RUN
+                class="flex-1 bg-transparent px-4 py-2 text-sm focus:outline-none placeholder:text-slate-600" 
+                placeholder="Message Scout Intel...">
+            <button onclick="askAI()" class="bg-blue-600 p-2 px-5 rounded-xl text-white font-bold text-sm active:scale-90 transition-all">
+                SEND
             </button>
         </div>
     </div>
@@ -68,137 +86,106 @@
     <script type="module">
         import * as webllm from "https://esm.run/@mlc-ai/web-llm";
 
-        const modelId = "Llama-3.2-1B-Instruct-q4f16_1-MLC";
+        // SWAPPED TO LIGHTER MODEL FOR MOBILE SPEED
+        const modelId = "SmolLM2-135M-Instruct-q4f16_1-MLC";
         let engine;
         let myChart = null;
-        const logo = document.getElementById("logo");
 
         async function init() {
-            engine = await webllm.CreateMLCEngine(modelId, {
-                initProgressCallback: (report) => {
-                    const p = Math.round(report.progress * 100);
-                    document.getElementById("progress-bar").style.width = p + "%";
-                    document.getElementById("progress-percent").innerText = p + "%";
-                    if (p === 100) {
-                        setTimeout(() => {
-                            document.getElementById("loading-screen").classList.add("hidden");
-                            document.getElementById("ai-status-pill").className = "text-[8px] font-bold px-2 py-1 rounded-full border border-green-500 text-green-500 uppercase";
-                            document.getElementById("ai-status-pill").innerText = "Ready";
-                        }, 500);
+            try {
+                engine = await webllm.CreateMLCEngine(modelId, {
+                    initProgressCallback: (report) => {
+                        const p = Math.round(report.progress * 100);
+                        document.getElementById("progress-bar").style.width = p + "%";
+                        document.getElementById("load-status").innerText = `Syncing Brain: ${p}%`;
+                        if (p === 100) {
+                            setTimeout(() => {
+                                document.getElementById("loading-screen").style.opacity = '0';
+                                setTimeout(() => document.getElementById("loading-screen").remove(), 500);
+                                document.getElementById("status-dot").classList.replace('bg-slate-700', 'bg-green-500');
+                                document.getElementById("status-dot").classList.add('shadow-[0_0_10px_rgba(34,197,94,0.6)]');
+                            }, 800);
+                        }
                     }
-                }
-            });
+                });
+            } catch (e) {
+                document.getElementById("load-status").innerText = "WebGPU Required";
+            }
         }
 
         window.askAI = async () => {
-            const text = document.getElementById("userInput").value.trim();
+            const input = document.getElementById("userInput");
+            const text = input.value.trim();
             if (!text) return;
 
+            input.value = "";
             logo.classList.add("thinking-logo");
-            document.getElementById("chat-container").innerHTML += `<div class="self-end ml-auto bg-blue-700 p-3 rounded-xl rounded-tr-none max-w-[85%] text-xs font-semibold shadow-md">${text}</div>`;
-            document.getElementById("userInput").value = "";
 
-            const bubbleWrapper = document.createElement("div");
-            bubbleWrapper.className = "flex flex-col items-start space-y-1";
+            // User Message
+            const chat = document.getElementById("chat-container");
+            chat.innerHTML += `<div class="flex justify-end"><div class="chat-bubble-user bg-blue-600 p-3 px-4 max-w-[85%] text-sm shadow-lg shadow-blue-900/20">${text}</div></div>`;
+            
+            // AI Thinking Bubble
+            const aiWrapper = document.createElement("div");
+            aiWrapper.className = "flex flex-col items-start space-y-1";
             const aiBubble = document.createElement("div");
-            aiBubble.className = "self-start bg-slate-800 p-3 chat-bubble-ai max-w-[95%] border border-slate-700 text-slate-200 text-sm output-content";
-            aiBubble.innerText = "...";
-            const statusTag = document.createElement("div");
-            statusTag.className = "text-[9px] text-blue-400 font-bold uppercase tracking-tighter ml-1";
-            statusTag.innerText = "Sifting Database...";
-
-            bubbleWrapper.appendChild(aiBubble);
-            bubbleWrapper.appendChild(statusTag);
-            document.getElementById("chat-container").appendChild(bubbleWrapper);
-            document.getElementById("chat-container").scrollTop = document.getElementById("chat-container").scrollHeight;
+            aiBubble.className = "chat-bubble-ai bg-slate-900 border border-slate-800 p-3 px-4 max-w-[95%] text-sm text-slate-200 shadow-xl";
+            aiBubble.innerHTML = `<div class="flex gap-1"><div class="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce"></div><div class="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce [animation-delay:0.2s]"></div><div class="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce [animation-delay:0.4s]"></div></div>`;
+            
+            aiWrapper.appendChild(aiBubble);
+            chat.appendChild(aiWrapper);
+            chat.scrollTop = chat.scrollHeight;
 
             try {
-                const dataRes = await fetch('data.json');
-                const scoutingData = await dataRes.json();
+                const res = await fetch('./data.json');
+                const scoutingData = await res.json();
                 const lowerText = text.toLowerCase();
-                let contextData = [];
 
-                // 1. SMART FILTERING FOR SPEED
-                if (lowerText.match(/top|best|highest|leaders/)) {
-                    statusTag.innerText = "Sorting Rankings...";
-                    contextData = [...scoutingData].sort((a, b) => (b.points || 0) - (a.points || 0)).slice(0, 10);
-                } else if (lowerText.match(/bottom|worst|lowest/)) {
-                    statusTag.innerText = "Finding Weaknesses...";
-                    contextData = [...scoutingData].sort((a, b) => (a.points || 0) - (b.points || 0)).slice(0, 10);
+                // Advanced Pre-Filter
+                let subset = [];
+                if (lowerText.match(/top|best|leader/)) {
+                    subset = [...scoutingData].sort((a,b) => b.points - a.points).slice(0, 8);
                 } else {
-                    statusTag.innerText = "Indexing Names...";
-                    contextData = scoutingData.filter(p => {
-                        const parts = p.name.toLowerCase().split(' ');
-                        return parts.some(part => lowerText.includes(part)) || lowerText.includes(p.pos.toLowerCase());
-                    });
+                    subset = scoutingData.filter(p => lowerText.includes(p.name.toLowerCase().split(' ')[0]) || lowerText.includes(p.pos.toLowerCase()));
                 }
-
-                // Capping data to protect mobile VRAM
-                if (contextData.length > 10) contextData = contextData.slice(0, 10);
-                if (contextData.length === 0) contextData = scoutingData.slice(0, 3);
-
-                statusTag.innerText = "AI Analyzing...";
+                if (subset.length === 0) subset = scoutingData.slice(0, 5);
 
                 const reply = await engine.chat.completions.create({
                     messages: [
-                        { role: "system", content: "You are a brief scout. Use Markdown Tables. No asterisks (*). No fluff." },
-                        { role: "user", content: `DATA: ${JSON.stringify(contextData)}\n\nUSER: ${text}` }
-                    ],
-                    temperature: 0.0
+                        { role: "system", content: "You are an elite basketball scout. Be direct, professional, and use markdown tables for stats. Use first names only in lists. No asterisks." },
+                        { role: "user", content: `DATA: ${JSON.stringify(subset)}\n\nPROMPT: ${text}` }
+                    ]
                 });
 
-                let cleanContent = reply.choices[0].message.content.replace(/\*/g, "").replace(/\| \|/g, "\|");
-                aiBubble.innerHTML = marked.parse(cleanContent);
+                aiBubble.innerHTML = marked.parse(reply.choices[0].message.content.replace(/\*/g, ""));
 
-                if (lowerText.match(/graph|chart|visual/)) {
-                    statusTag.innerText = "Rendering Visuals...";
-                    renderGraph(scoutingData, text);
-                }
-
-                statusTag.innerText = "Complete";
-                setTimeout(() => statusTag.style.opacity = "0", 3000);
+                if (lowerText.match(/graph|chart|show/)) renderGraph(scoutingData, lowerText);
 
             } catch (err) {
-                aiBubble.innerText = "Analysis error. Try a specific name.";
-                statusTag.innerText = "Error";
+                aiBubble.innerText = "Connection lost. Try again.";
             }
-            
+
             logo.classList.remove("thinking-logo");
-            document.getElementById("chat-container").scrollTop = document.getElementById("chat-container").scrollHeight;
+            chat.scrollTop = chat.scrollHeight;
         };
 
         function renderGraph(data, query) {
-            const wrapper = document.getElementById("chart-wrapper");
-            wrapper.classList.remove("hidden");
+            document.getElementById("chart-wrapper").classList.remove("hidden");
             const ctx = document.getElementById('scoutChart').getContext('2d');
             if (myChart) myChart.destroy();
 
-            let label = "Points"; let key = "points";
-            if (query.includes("rebounds")) { label = "Rebounds"; key = "rebounds"; }
-            if (query.includes("assists")) { label = "Assists"; key = "assists"; }
-
-            const top8 = [...data].sort((a, b) => b[key] - a[key]).slice(0, 8);
+            let key = "points"; let label = "PPG";
+            if (query.includes("rebound")) { key = "rebounds"; label = "RPG"; }
+            
+            const top = [...data].sort((a,b) => b[key]-a[key]).slice(0, 6);
 
             myChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: top8.map(p => p.name.split(' ')[0]), // First name for mobile space
-                    datasets: [{
-                        label: label,
-                        data: top8.map(p => p[key]),
-                        backgroundColor: '#3b82f6',
-                        borderRadius: 4
-                    }]
+                    labels: top.map(p => p.name.split(' ')[0]),
+                    datasets: [{ label, data: top.map(p => p[key]), backgroundColor: '#3b82f6', borderRadius: 5 }]
                 },
-                options: { 
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: { 
-                        y: { beginAtZero: true, grid: { color: '#334155' } },
-                        x: { grid: { display: false }, ticks: { font: { size: 9 } } }
-                    } 
-                }
+                options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { ticks: { color: '#64748b', font: { size: 10 } } } } }
             });
         }
 
