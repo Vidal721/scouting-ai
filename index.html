@@ -9,38 +9,36 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     
     <style>
-        :root {
-            --brand-yellow: #fbbf24;
-        }
+        :root { --brand-yellow: #fbbf24; }
         body { 
-            background-color: #050505; 
-            color: #e4e4e7; 
+            background-color: #050505; color: #e4e4e7; 
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             overflow: hidden;
         }
-        /* Custom Scrollbar */
-        #chat-container::-webkit-scrollbar { width: 4px; }
-        #chat-container::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
+        
+        /* Mobile Table Fixes */
+        #chat-container table { 
+            width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 11px;
+            display: block; overflow-x: auto; border: 1px solid #27272a;
+        }
+        #chat-container th { background: #18181b; padding: 8px; border: 1px solid #27272a; color: var(--brand-yellow); text-align: left; }
+        #chat-container td { padding: 8px; border: 1px solid #27272a; background: rgba(255,255,255,0.02); }
 
         .chat-bubble-ai { 
-            border-radius: 2px 16px 16px 16px; 
-            background: rgba(24, 24, 27, 0.8);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(251, 191, 36, 0.1);
+            border-radius: 4px 16px 16px 16px; 
+            background: rgba(24, 24, 27, 0.8); backdrop-filter: blur(8px);
+            border-left: 3px solid var(--brand-yellow);
         }
         .chat-bubble-user { 
-            border-radius: 16px 16px 2px 16px; 
-            background: var(--brand-yellow); 
-            color: #000;
-            font-weight: 500;
+            border-radius: 16px 16px 4px 16px; 
+            background: var(--brand-yellow); color: #000; font-weight: 600;
         }
+        
         .thinking { animation: pulse 1.5s infinite; color: var(--brand-yellow); }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-        /* Modern Input Styling */
         .glass-input {
-            background: rgba(24, 24, 27, 0.9);
-            backdrop-filter: blur(12px);
+            background: rgba(24, 24, 27, 0.95); backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
     </style>
@@ -48,57 +46,49 @@
 <body class="h-screen flex flex-col">
 
     <div id="loading-screen" class="fixed inset-0 bg-black z-[110] flex flex-col items-center justify-center p-8 transition-opacity duration-700">
-        <div class="relative w-20 h-20 mb-8">
-            <div class="absolute inset-0 border-4 border-yellow-400/20 rounded-full"></div>
-            <div class="absolute inset-0 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
+        <div class="relative w-16 h-16 mb-6">
+            <div class="absolute inset-0 border-2 border-yellow-400/20 rounded-full"></div>
+            <div class="absolute inset-0 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
         </div>
-        <h2 class="text-xl font-bold tracking-[0.3em] text-white mb-2 uppercase italic">935 <span class="text-yellow-400">Tactical</span></h2>
-        <p id="load-status" class="text-[10px] text-zinc-500 font-mono uppercase tracking-widest mb-6">Initializing Neural Link...</p>
+        <h2 class="text-lg font-bold tracking-[.4em] text-white mb-2 uppercase italic">SYSTEM <span class="text-yellow-400">935</span></h2>
         <div class="w-48 bg-zinc-900 h-1 rounded-full overflow-hidden">
             <div id="progress-bar" class="bg-yellow-400 h-full transition-all duration-500" style="width: 0%"></div>
         </div>
+        <p id="load-status" class="mt-4 text-[9px] text-zinc-500 font-mono uppercase tracking-[.2em]">Ready for uplink...</p>
     </div>
 
     <div id="auth-overlay" class="fixed inset-0 bg-black/90 backdrop-blur-xl z-[100] flex flex-col items-center justify-center p-6 hidden">
         <div class="w-full max-w-sm space-y-6">
-            <div class="text-center mb-8">
-                <div class="inline-block p-4 border-2 border-yellow-400 mb-4">
-                    <span class="font-black text-3xl tracking-tighter">935</span>
-                </div>
-                <h2 id="auth-title" class="text-zinc-400 font-medium tracking-[0.2em] uppercase text-xs">Security Clearance Required</h2>
+            <div class="text-center border-b border-zinc-800 pb-6">
+                <h2 id="auth-title" class="text-white font-black tracking-[.3em] uppercase text-sm">Personnel Auth</h2>
             </div>
-            
             <div class="space-y-3">
-                <input type="email" id="email" class="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-xl text-white outline-none focus:border-yellow-400 transition-colors" placeholder="Email Address">
-                <input type="password" id="password" class="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-xl text-white outline-none focus:border-yellow-400 transition-colors" placeholder="Access Key">
-                <button id="auth-button" class="w-full bg-yellow-400 p-4 rounded-xl font-bold text-black uppercase tracking-widest hover:bg-yellow-300 active:scale-[0.98] transition-all">Authenticate</button>
+                <input type="email" id="email" class="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-xl text-sm outline-none focus:border-yellow-400" placeholder="EMAIL">
+                <input type="password" id="password" class="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-xl text-sm outline-none focus:border-yellow-400" placeholder="ACCESS KEY">
+                <button id="auth-button" class="w-full bg-yellow-400 p-4 rounded-xl font-black text-black uppercase tracking-widest active:scale-95 transition-all">Unlock Intel</button>
             </div>
-            
-            <div class="flex flex-col items-center gap-4">
-                <button id="toggle-auth" class="text-[11px] text-zinc-500 font-bold uppercase hover:text-yellow-400 transition-colors">Request New Credentials</button>
-                <p id="auth-error" class="text-red-500 text-[10px] uppercase font-bold opacity-0 transition-opacity">Error</p>
+            <div class="flex justify-between items-center text-[10px] font-bold uppercase tracking-tighter">
+                <button id="toggle-auth" class="text-zinc-500 hover:text-yellow-400">New Scout?</button>
+                <p id="auth-error" class="text-red-500 opacity-0 transition-opacity">Error</p>
             </div>
         </div>
     </div>
 
-    <header class="safe-top p-4 pt-12 flex justify-between items-center bg-black/50 backdrop-blur-md border-b border-white/5">
-        <div class="flex items-center gap-2">
-            <div class="w-2 h-6 bg-yellow-400"></div>
-            <h1 id="logo" class="text-lg font-black tracking-tighter uppercase italic">935 <span class="text-yellow-400 not-italic">INTEL</span></h1>
-        </div>
-        <button id="btn-logout" class="text-[10px] border border-zinc-800 px-4 py-2 rounded-full text-zinc-400 font-bold uppercase hover:bg-white hover:text-black transition-all">Exit System</button>
+    <header class="p-4 pt-10 flex justify-between items-center bg-black border-b border-white/5">
+        <h1 class="text-md font-black tracking-tighter uppercase italic">935 <span class="text-yellow-400 not-italic">INTEL</span></h1>
+        <button id="btn-logout" class="text-[9px] border border-zinc-800 px-3 py-1.5 rounded-md text-zinc-500 font-bold uppercase hover:bg-red-500/10">Logout</button>
     </header>
 
     <main id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-6 pb-32">
-        <div class="text-center py-10">
-            <span class="text-[9px] font-bold text-zinc-600 uppercase tracking-[0.5em] border border-zinc-800 px-4 py-2 rounded-full">Secure Uplink Established</span>
+        <div class="text-center py-6 opacity-30">
+            <span class="text-[8px] font-bold uppercase tracking-[.5em]">Active Scout Network Uplink</span>
         </div>
     </main>
 
-    <div class="fixed bottom-0 left-0 right-0 p-4 pb-8 bg-gradient-to-t from-black via-black/90 to-transparent">
-        <div class="max-w-3xl mx-auto glass-input flex gap-2 p-2 rounded-2xl shadow-2xl">
-            <input type="text" id="userInput" class="flex-1 bg-transparent px-4 py-3 text-sm text-white focus:outline-none placeholder:text-zinc-600" placeholder="Ask for scout report...">
-            <button onclick="askAI()" class="bg-yellow-400 px-6 rounded-xl text-black font-black text-[10px] uppercase tracking-tighter hover:bg-yellow-300 transition-colors">Query</button>
+    <div class="fixed bottom-0 left-0 right-0 p-4 pb-10 bg-gradient-to-t from-black via-black/80 to-transparent">
+        <div class="max-w-3xl mx-auto glass-input flex gap-2 p-1.5 rounded-2xl shadow-2xl">
+            <input type="text" id="userInput" class="flex-1 bg-transparent px-4 py-3 text-sm text-white focus:outline-none placeholder:text-zinc-600" placeholder="Ask 935 Intelligence...">
+            <button onclick="askAI()" class="bg-yellow-400 px-5 rounded-xl text-black font-black text-[10px] uppercase">Run</button>
         </div>
     </div>
 
@@ -127,14 +117,13 @@
                     initProgressCallback: (report) => {
                         const p = Math.round(report.progress * 100);
                         document.getElementById("progress-bar").style.width = p + "%";
-                        document.getElementById("load-status").innerText = `Syncing Tactical Data: ${p}%`;
                         if (p === 100) {
                             setTimeout(() => {
-                                document.getElementById('loading-screen').style.opacity = '0';
+                                document.getElementById('loading-screen').classList.add('opacity-0');
                                 setTimeout(() => {
                                     document.getElementById('loading-screen').classList.add('hidden');
                                     if(!auth.currentUser) document.getElementById('auth-overlay').classList.remove('hidden');
-                                }, 500);
+                                }, 700);
                             }, 1000);
                         }
                     }
@@ -143,37 +132,31 @@
         }
         initAI();
 
-        // Auth & UI Toggles
+        // Auth Logic
         document.getElementById('toggle-auth').addEventListener('click', () => {
             isSignUpMode = !isSignUpMode;
-            document.getElementById('auth-title').innerText = isSignUpMode ? "Register New Scout" : "Security Clearance Required";
-            document.getElementById('auth-button').innerText = isSignUpMode ? "Create Account" : "Authenticate";
+            document.getElementById('auth-title').innerText = isSignUpMode ? "Create Account" : "Personnel Auth";
         });
 
         document.getElementById('auth-button').addEventListener('click', async () => {
             const email = document.getElementById('email').value;
             const pass = document.getElementById('password').value;
-            const error = document.getElementById('auth-error');
             try {
                 if (isSignUpMode) await createUserWithEmailAndPassword(auth, email, pass);
                 else await signInWithEmailAndPassword(auth, email, pass);
             } catch (e) {
-                error.innerText = "Access Denied";
-                error.style.opacity = "1";
-                setTimeout(() => error.style.opacity = "0", 3000);
+                const err = document.getElementById('auth-error');
+                err.style.opacity = "1"; setTimeout(() => err.style.opacity = "0", 3000);
             }
         });
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) document.getElementById('auth-overlay').classList.add('hidden');
-            else if (document.getElementById("progress-bar").style.width === "100%") {
-                document.getElementById('auth-overlay').classList.remove('hidden');
-            }
+        onAuthStateChanged(auth, (u) => {
+            if (u) document.getElementById('auth-overlay').classList.add('hidden');
         });
 
         document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
 
-        // Logic for AI interaction
+        // Core AI Function
         window.askAI = async () => {
             const input = document.getElementById("userInput");
             const text = input.value.trim();
@@ -181,14 +164,11 @@
 
             input.value = "";
             const chat = document.getElementById("chat-container");
+            chat.innerHTML += `<div class="flex justify-end"><div class="chat-bubble-user p-3 px-5 max-w-[85%] text-sm">${text}</div></div>`;
             
-            // Add User Bubble
-            chat.innerHTML += `<div class="flex justify-end"><div class="chat-bubble-user p-3 px-5 max-w-[85%] text-sm shadow-lg">${text}</div></div>`;
-            
-            // Add AI Thinking Bubble
             const aiBubble = document.createElement("div");
-            aiBubble.className = "chat-bubble-ai p-4 max-w-[90%] text-sm leading-relaxed";
-            aiBubble.innerHTML = `<span class="thinking font-mono text-[10px] uppercase tracking-widest">Thinking...</span>`;
+            aiBubble.className = "chat-bubble-ai p-4 max-w-[95%] text-sm leading-relaxed";
+            aiBubble.innerHTML = `<span class="thinking font-mono text-[9px] uppercase tracking-widest">Querying database...</span>`;
             chat.appendChild(aiBubble);
             chat.scrollTop = chat.scrollHeight;
 
@@ -196,32 +176,32 @@
                 const res = await fetch('./data.json');
                 const scoutingData = await res.json();
                 
-                // SYSTEM PROMPT TUNING: Makes the AI "better" while keeping it lightweight
-                const systemPrompt = "You are the 935 Lead Scout AI. Be concise, professional, and tactical. " +
-                                     "Use Markdown tables for team comparisons. " +
-                                     "If asked about specific teams, refer to the provided scouting data. " +
-                                     "Do not mention you are an AI; act as the system interface.";
+                // ROUTER: Only provide data if the query is analytical
+                const isDataQuery = /player|who|best|stats|points|rebound|rank/i.test(text);
+                
+                const systemPrompt = isDataQuery 
+                    ? "You are a Data Analyst. ONLY use the provided JSON. Respond with a Markdown table. Do not explain your process, just provide the analysis."
+                    : "You are the 935 System AI. Be brief, professional, and tactical. Greet the user as 'Scout' if they say hello.";
+
+                const userMessage = isDataQuery 
+                    ? `DATA: ${JSON.stringify(scoutingData.slice(0,10))}\n\nQUERY: ${text}`
+                    : text;
 
                 const reply = await engine.chat.completions.create({
                     messages: [
                         { role: "system", content: systemPrompt },
-                        { role: "user", content: `CONTEXT_DATA: ${JSON.stringify(scoutingData.slice(0,15))}\n\nQUERY: ${text}` }
+                        { role: "user", content: userMessage }
                     ],
-                    temperature: 0.7, // Lower temperature = more professional/factual
-                    max_tokens: 500
+                    temperature: 0.1, // Fixed logic
+                    max_tokens: 350
                 });
 
                 aiBubble.innerHTML = marked.parse(reply.choices[0].message.content);
-            } catch (err) { 
-                aiBubble.innerHTML = `<span class="text-red-500 font-bold uppercase text-[10px]">Uplink Failure: Re-authentication Required.</span>`; 
-            }
+            } catch (err) { aiBubble.innerHTML = "Uplink Error."; }
             chat.scrollTop = chat.scrollHeight;
         };
 
-        // Handle Enter Key
-        document.getElementById('userInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') askAI();
-        });
+        document.getElementById('userInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') askAI(); });
     </script>
 </body>
 </html>
