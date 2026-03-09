@@ -143,12 +143,21 @@
                     }
                     if (subset.length === 0) subset = scoutingData.slice(0, 3);
 
-                    // 3. AI COMPLETION
+                    // ... inside your askAI function ...
+                                    
+                    const systemRole = `You are an expert basketball scout with an opinion. 
+                    1. If a user asks for your opinion (e.g., "Do they belong at the top?"), answer directly (Yes/No) and explain why based on the stats.
+                    2. Be conversational but professional—like a coach talking to a GM.
+                    3. ALWAYS use Markdown tables if you are listing stats or comparing players.
+                    4. Never use asterisks (*). 
+                    5. Keep it snappy for mobile reading.`;
+                                    
                     const reply = await engine.chat.completions.create({
                         messages: [
-                            { role: "system", content: "You are a pro scout assistant. If greeting, be brief. If asked about players, use markdown tables. No asterisks. No fluff." },
-                            { role: "user", content: `DATA: ${JSON.stringify(subset)}\n\nUSER: ${text}` }
-                        ]
+                            { role: "system", content: systemRole },
+                            { role: "user", content: `CONTEXT DATA: ${JSON.stringify(subset)}\n\nUSER QUESTION: ${text}` }
+                        ],
+                        temperature: 0.7 // Increased slightly to allow for "opinion" style writing
                     });
                     aiBubble.innerHTML = marked.parse(reply.choices[0].message.content.replace(/\*/g, ""));
                 }
