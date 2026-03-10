@@ -181,7 +181,7 @@
                 
                 const systemPrompt = isDataQuery 
                     ? "You are a Data Analyst. ONLY use the provided JSON. Respond with a Markdown table. Do not explain your process, just provide the analysis."
-                    : "You are the 935 System AI. Be brief, professional, and tactical. Greet the user as 'Scout' if they say hello.";
+                    : "You are the 935 System AI. Be brief, professional, and tactical. Greet the user if they say hello.";
 
                 const userMessage = isDataQuery 
                     ? `DATA: ${JSON.stringify(scoutingData.slice(0,10))}\n\nQUERY: ${text}`
